@@ -493,15 +493,9 @@ Once you have successfully completed the steps above, you are finished with the 
 
 ## Final Steps
 
-### Feedback Form
-As the final graded item for this Lab, please fill out this [Lab Feedback Form](https://docs.google.com/forms/d/e/1FAIpQLSdMDX6pdLr19Jmt5v1oP8FOTj4GVqGNUjp8Iu4oV7ydT4ZGCg/viewform?usp=header). There will also be space for you to mention any feedback for the previous labs, which we especially encourage for Lab 4 and 5 since there was not a dedicated feedback question for those assignments.
-
-### Teardown your AWS resources
-Finally, follow the [AWS_TEARDOWN](/AWS_TEARDOWN.md) guide to release the resouces you used during the lab. You are free to use up the remaining credits you have and experiment further with Tranium, but any charges to your card are your own responsibility.
-
-> [!WARNING]
+> [!Important]
 > 
-> Do NOT forget to complete this step!
+> Shutdown your instance once you are finished working.
 
 ## Conclusion
 Congrats on finishing Lab 6! In this lab, you explored the architecture and programming of ML accelerators, specifically the AWS Tranium device. You learned about the key components of ML accelerators, such as systolic arrays, memory hierarchies, and specialized compute engines, and how these components are optimized for machine learning workloads. By implementing kernels using the Neuron Kernel Interface (NKI), you gained hands-on experience in mapping ML algorithms to a target hardware, customizing the iteration, computations, memory management, and more to achieve high performance. By completing this lab, you have gained valuable skills in programming domain-specific accelerators, a critical area in modern computing. These skills will be increasingly relevant as the demand for efficient AI and ML solutions continues to grow.
