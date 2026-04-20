@@ -33,6 +33,16 @@ def save_data(X, W1, b1, W2, b2, path="ffnn"):
         b2.tofile(f)
 
 def load_data(path="ffnn"):
+    # Check if all necessary data files exist in the specified path.
+    required_files = ["X.bin", "W1.bin", "b1.bin", "W2.bin", "b2.bin"]
+    missing_files = [fname for fname in required_files if not os.path.exists(os.path.join(path, fname))]
+    if missing_files:
+        print(
+            f"Missing files in '{path}': {', '.join(missing_files)}. "
+            'Please run "python ffnn_ref.py --store-data" to generate the data files.'
+        )
+        raise FileNotFoundError(f"Required data files not found in '{path}'")
+    
     # Load input sample
     with open(f"{path}/X.bin", "rb") as f:
         X = np.fromfile(f, dtype=np.float32).reshape(BATCH_SIZE, INPUT_SIZE)

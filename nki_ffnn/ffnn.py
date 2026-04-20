@@ -11,17 +11,13 @@ from kernels import nki_forward, nki_predict
 from utils import load_data, load_results, BATCH_SIZE, INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE
 import argparse
 
-# Enable .neff output for profiling
-os.environ["NEURON_FRAMEWORK_DEBUG"] = "1"
-os.environ["NEURON_CC_FLAGS"]= " --disable-dge "
-
-
 def benchmark_nki(nki_func, *args, **kwargs):
     bench_func = nki.benchmark(warmup=5, iters=10)(nki_func)
     bench_func(*args, **kwargs)
     latency_res = bench_func.benchmark_result.nc_latency
     exec_time = latency_res.get_latency_percentile(50)
     print("Execution Time: {:.2f} ms ".format(exec_time / 1000.0))
+    return exec_time
 
 if __name__ == "__main__":
     # Parse command-line arguments
@@ -56,8 +52,12 @@ if __name__ == "__main__":
             print(f"Index {idx}: Golden value = {Y[idx]}, Prediction = {predictions[idx]}")
 
     if args.benchmark:
+        report_data = {}
         for version in ['tiled', 'hoist_load', 'block_free_dimension', 'fully_optimized']:
             print(f"Benchmarking nki_predict using matmul version: {version}")
-            benchmark_nki(nki_predict, X, W1, b1, W2, b2, matmul_kernel=version)
+            exec_time = benchmark_nki(nki_predict, X, W1, b1, W2, b2, matmul_kernel=version)
+            report_data[version] = exec_time
             print()
-
+        print("\nBenchmarking Summary:")
+        for version, exec_time in report_data.items():
+            print(f"Matmul version: {version}, Execution time: {exec_time} ms")

@@ -9,17 +9,17 @@ There are two sections of the lab, the Directed and Open-Ended Portions. The Dir
 
 > [!NOTE]
 >
-> This lab was made possible with the support of AWS, and they will be awarding prizes to the students with the most optimal kernels! See the [Open-Ended Prizes](#prizes) section for more details.
+> This lab was made possible with the support of AWS, and they will be awarding prizes to the students with the most optimal kernels!
 
-There will be many links to documentation during the lab, and we **highly** recommend you do your best to read them thoroughly. It will be difficult to program the accelerator, and more importantly, it will be tough to optimize your programs without background context.
+> [!IMPORTANT]
+> 
+> There will be many links to documentation during the lab, and we **highly** recommend you do your best to read them thoroughly. It will be difficult to program the accelerator, and more importantly, it will be tough to optimize your programs without background context.
 
 
 ### Graded Items:
-All graded items are to be submitted through [Gradescope](https://www.gradescope.com/courses/959486). The Directed and Open-Ended portions of the lab must both be completed individually, unless otherwise approved by course staff. The Directed portion is worth 30% of your lab grade, and the Open-Ended portion is worth 70% of your lab grade. 
+All graded items are to be submitted through Gradescope. The Directed and Open-Ended portions of the lab must both be completed individually, unless otherwise approved by course staff. The Directed portion is worth 30% of your lab grade, and the Open-Ended portion is worth 70% of your lab grade. 
 
-The Directed Portion is due **Friday, May 2 at 11:59PM**. The Open-Ended portion is due **Friday, May 9 at 11:59PM**, after which the competition will be closed and the prizes awarded. 
-
-Finally, after completing the lab, you will need to fill out a feedback form. The form helps us improve this lab for future versions of the course, so any feedback, positive or negative, is greatly appreciated!
+The Directed Portion is due **Friday, April 24 at 11:59PM**. The Open-Ended portion is due **Friday, May 1 at 11:59PM**. The competition will run for a few days after the graded portions are due, to allow for students to explore further optimizations. The competition will close on **Tuesday, May 5 at 11:59PM**.
 
 Graded Items:
 - Code for Directed Portion: `nki_ffnn/kernels.py`
@@ -43,11 +43,11 @@ Systolic arrays are good for kernels like matrix multiplication. From the animat
   <a href="https://medium.com/lightmatter/matrix-processing-with-nanophotonics-998e294dabc1">Source</a>
 </p>
 
-For more details on systolic arrays, please watch and review the [Specialization lecture](https://inst.eecs.berkeley.edu/~cs152/sp25/).
+For more details on systolic arrays, please watch and review the lecture on [Spatial Architectures and Trainium](https://cs152.org/).
 
 
 ### Tranium Overview
-In this lab, we will work on AWS Tranium. You can find the full architecture guide here: [Trainium Architecture Guide for NKI](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/arch/trainium_inferentia2_arch.html), but here is a brief overview: 
+In this lab, we will work on AWS Tranium. You can find the full architecture guide here: [Trainium Architecture Guide for NKI](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/guides/architecture/trainium_inferentia2_arch.html), but here is a brief overview: 
 
 
 Tranium instances contain a single Tranium Device, which has 2 NeuronCores. Each NeuronCore has an HBM (High-bandwidth memory) unit and on-chip storage units that the compute units interface with. Each core has various compute units optimized for different functions:
@@ -56,33 +56,27 @@ Tranium instances contain a single Tranium Device, which has 2 NeuronCores. Each
 - Scalar Engine: 128-wide scalar unit, for activation functions, independent calculations (each output element may depend on a single input element)
 - GpSimd Engine: general-purpose engine for operations not suited for the other engines
 
-Read the [NeuronCore Compute Engines](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/arch/trainium_inferentia2_arch.html#neuroncore-v2-compute-engines) section of the architecture guide for more details on each engine.
+Read the [NeuronCore Compute Engines](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/guides/architecture/trainium_inferentia2_arch.html#neuroncore-v2-compute-engines) section of the architecture guide for more details on each engine.
 
 The NeuronCores are highly optimized and designed for ML workloads, and thus, each engine has its own unique purpose in common ML algorithms. We can get maximal performance out of the chip if we carefully integrate the engines together. We must make sure that our algorithm is designed such that computations are mapped to the appropriate and most powerful engines while accounting for bandwidth and throughput constraints. We must also plan for communications between engines based on their internal connections and the on-chip memory system.
 
 <p align="center">
   <img width="400" src="./img/neuron_device2.png">
-  <br>
-  <a href="https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/arch/trainium_inferentia2_arch.html#trainium-inferentia2-arch">Source</a>
 </p>
 
 There are various levels of memory at play in the Tranium Instance. There is the host memory that is external to the Neuron Cores. Then, there is the HBM, which is the main on-device memory. Finally, there is the on-chip memory, consisting of the SBUF (State Buffer) and the PSUM (Partial Sum Buffer). The levels, sizes, and bandwidths of these memories are shown below. When developing kernels, we can also optimize performance by planning our loads and stores based on these architectural parameters and the use of the data in the kernel (i.e. tiling, maximal data reuse, etc).
 
 <p align="center">
   <img width="600" src="./img/memory_hierarchy.png">
-  <br>
-  <a href="https://github.com/stanford-cs149/asst4-trainium/tree/main">Source</a>
 </p>
 
-All computations require loading data from the HBM into the SBUF, which is connected as an input to all of the engines. The output of the Tensor Engine is stored in the PSUM, which can be an input to the Vector and Scalar Engines. The Vector, Scalar, and GpSimd engines can write back to the SBUF. Note that the SBUF and PSUM contain 128 partitions each, which are similar to banks of memory. These have connections to the 128 lanes in the Tensor, Scalar, and Vector engines. Thus, optimizing kernels will require tiling memory and compute instructions over the 128 lanes and partitions. Read the [Data Movement](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/arch/trainium_inferentia2_arch.html#data-movement) section of the architecture guide for more information.
+All computations require loading data from the HBM into the SBUF, which is connected as an input to all of the engines. The output of the Tensor Engine is stored in the PSUM, which can be an input to the Vector and Scalar Engines. The Vector, Scalar, and GpSimd engines can write back to the SBUF. Note that the SBUF and PSUM contain 128 partitions each, which are similar to banks of memory. These have connections to the 128 lanes in the Tensor, Scalar, and Vector engines. Thus, optimizing kernels will require tiling memory and compute instructions over the 128 lanes and partitions. Read the [Data Movement](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/guides/architecture/trainium_inferentia2_arch.html#data-movement) section of the architecture guide for more information.
 
 <p align="center">
   <img width="400" src="./img/neuron_core.png">
-  <br>
-  <a href="https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/arch/trainium_inferentia2_arch.html#trainium-inferentia2-arch">Source</a>
 </p>
 
-There are a lot of factors at play when writing kernels on Tranium devices, and good kernels will take advantage of all of the compute engines and full memory hierarchy to reduce bottlenecks and extract the most performance. For more details on Tranium architecture, look at the [Tranium Architecture Guide for NKI](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/arch/trainium_inferentia2_arch.html#trainium-inferentia2-arch).
+There are a lot of factors at play when writing kernels on Tranium devices, and good kernels will take advantage of all of the compute engines and full memory hierarchy to reduce bottlenecks and extract the most performance. For more details on Tranium architecture, look at the [Trainium Architecture Guide for NKI](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/guides/architecture/trainium_inferentia2_arch.html)
 
 
 ## Setup
@@ -97,17 +91,47 @@ To begin working on Tranium, follow the instructions in [AWS_SETUP.md](/AWS_SETU
 
 ### Setup Repository and Environment
 
-#### Setup GitHub Classroom Repository
-To begin, accept the GitHub Classroom invite link. This will create a personal repo for you to push your code and track your work. After you have created your project repo with GitHub Classroom, launch your Tranium instance and connect to it via SSH, a remote session using VSCode, or another application. 
+#### Setup GitHub Repository
+First, start up and SSH into your Trainium instance, and clone the lab assignment repository:
+```bash
+git clone -o skeleton https://github.com/cs152-teach/lab6.git
+```
 
-Once you have logged into the instance, make sure you have GitHub configured.
+> [!IMPORTANT]
+> 
+> Make sure to shut down your instance after you are done working with it, or if you are stopping working for more than an hour.
 
-- [Configure your name in git](https://docs.github.com/en/get-started/getting-started-with-git/setting-your-username-in-git)
-- [Configure your email address in git](https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-personal-account-on-github/managing-email-preferences/setting-your-commit-email-address#setting-your-commit-email-address-in-git).
-  Use your Berkeley email address.
-- [Create an SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=linux#generating-a-new-ssh-key).
-  If you create your SSH key with a password, you'll need to type your password every time you push/pull. We recommend leaving the password blank, but it's your choice.
-- [Add the SSH key to your GitHub account](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account#adding-a-new-ssh-key-to-your-account).
+#### Run Setup Scripts
+Now, run the `install.sh` script in the `lab6` repo.
+```bash
+source install.sh
+```
+
+#### Make a private GitHub repository
+Make a private repo on your personal GitHub, and push this repo to your private url. This is so you can develop your kernels locally before running them on Trainium, and so you can submit your files on Gradescope through GitHub.
+
+Since you are working on a new machine and not your local laptop, you will need to configure your github credentials on the AWS machine to get push/pull permissions to your personal repo. Follow these steps for this process:
+
+#### Configure your name in git:
+```bash
+git config --global user.name "Your Name"
+```
+
+#### Configure your email address in git:
+```bash
+git config --global user.email "your_email@berkeley.edu"
+```
+
+#### Create an SSH key:
+```bash
+cd ~
+ssh-keygen -t ed25519 -C "your_email@berkeley.edu"
+```
+If you create your SSH key with a password, you'll need to type your password every time you push/pull. We recommend leaving the password blank, but it's your choice.
+
+#### Add the SSH key to your GitHub account: 
+
+You can find instructions on how to do this here: [Instructions](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account#adding-a-new-ssh-key-to-your-account)
 
 Once you are done, be sure that you can authenticate to GitHub via SSH by running:
 
@@ -120,37 +144,21 @@ If you have configured things correctly, you should see something like this:
 Hi <YOUR GITHUB USERNAME>! You've successfully authenticated, but GitHub does not provide shell access.
 ```
 
-Finally, clone the repository you created earlier on GitHub Classroom and add this repo as a skeleton remote so you can get the template code (replace <USERNAME> with your GitHub username that created the classroom repository).
+Then, you can set your remote url and push the lab repo: 
 ```bash
-git clone git@github.com:ucb-152/lab6-<USERNAME>.git
-cd lab6-<USERNAME>
-git remote add skeleton https://github.com/ucb-152/lab6
-git pull skeleton main
+git remote add origin <private-repo-url>
+git push -u origin main
 ```
-
-#### Run Setup Scripts
-Now, run the `install.sh` script.
-```bash
-source install.sh
-```
-The install script will activate the Python virtual environment prebuilt on the AWS instances with the Deep Learning AMI (`source /opt/aws_neuronx_venv_pytorch_2_5/bin/activate`), which contains all the dependencies needed for the assignment. It will also modify your `~/.bashrc` file so that the virtual environment is activated automatically upon future logins to your machine. Finally, the script sets up your InfluxDB credentials so that you may use neuron-profile, which will be useful for future sections.
-
-> [!IMPORTANT]
-> 
-> Now, shut down your instance before proceeding
 
 #### Local Setup
-We will also set up the repo on your local computer. If you have not already used GitHub on your local computer before, make sure to follow the same steps from above to configure your git name, email, and SSH access.
+You can also clone the repo to your local computer. If you have not already used GitHub on your local computer before, make sure to follow the same steps from above to configure your git name, email, and SSH access.
 
 Clone the GitHub repo to your local machine 
 ```bash
-git clone git@github.com:ucb-152/lab6-<USERNAME>.git
-cd lab6-<USERNAME>
-git remote add skeleton https://github.com/ucb-152/lab6
-git pull skeleton main
+git clone <private-repo-url>
 ```
 
-This will allow you to program and develop your kernels locally. Once you are ready to test them, you can push your changes to GitHub and pull them on the Tranium instance to simulate or benchmark them. While you are allowed to develop your kernels directly while connected to the Tranium instance, keep an eye on how long you are taking and make sure you are not burning through your credits. You have enough credits for roughly 40-50 hours of Tranium time. We recommend you do your initial development locally, then migrate to Tranium to simulate and benchmark the kernels. 
+This will allow you to program and develop your kernels locally. Once you are ready to test them, you can push your changes to GitHub and pull them on the Tranium instance to simulate or benchmark them. While you are allowed to develop your kernels directly while connected to the Tranium instance, it saves resources if you minimize your time connected to the Trainium instance. We recommend you do your initial development locally, then migrate to Tranium to simulate and benchmark the kernels. 
 
 > [!WARNING]
 >
@@ -185,7 +193,7 @@ All files needed for the directed portion are located in the `nki_ffnn` director
 - `ffnn_ref.py`: Reference NumPy implementation of the Feedforward Neural Network.
 - `ffnn.py`: Main program to develop the `ffnn` NKI kernels.
 - `matmul_kernels.py`: Matrix Multiplication kernels developed by AWS, with various levels of optimization. 
-  - Read the [AWS Matrix Multiplication tutorial](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/tutorials/matrix_multiplication.html#matrix-multiplication) for more information. 
+  - Read the [AWS Matrix Multiplication tutorial](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/guides/tutorials/matrix_multiplication.html) for more information. 
 - `kernels.py`: Contains the kernels you will need to implement for the FFNN. 
   - **This is the only file you will need to edit.**
 - `tester.py`: Debug kernels individually on CPU before running full kernel on Tranium.
@@ -208,26 +216,29 @@ There should be `*.bin` files in the `ffnn` directory, one for each of the follo
 In order to program the Tranium devices easily, we will take advantage of AWS's [Neuron Kernel Interface](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/index.html) or NKI. This is a collection of APIs that allow users to program directly in Python and perform computations using the Tranium engines.
 > [!IMPORTANT]
 >
-> Make sure to skim through the [Neuron Kernel Interface](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/index.html) documentation, and pay particular attention to the [NKI Language](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/api/nki.language.html) APIs.
+> Make sure to skim through the [Neuron Kernel Interface](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/index.html) documentation, and pay particular attention to the [NKI Language](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/api/nki.language.html) APIs and the [NKI ISA](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/api/nki.isa.html) APIs.
 > 
 > Also, make sure to read these sections of the documentation before proceeding:
+> - [About Neuron Kernel Interface (NKI)](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/get-started/about/)
 > - [Implementing your first NKI kernel](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/getting_started.html#implementing-your-first-nki-kernel)
-> - [Representing data in NKI](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/programming_model.html#representing-data-in-nki)
+> - [Representing data in NKI](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/get-started/about/data-representation-overview.html#representing-data-in-nki)
 >
 > In addition to the linked sections, we highly recommend reading or skimming the full guides, as they will help in developing the NKI kernels.
 
+For each of the APIs, the documentation will provide details on what inputs and outputs they expect, and how the instruction executes on hardware. The NKI ISA APIs are more complex, but provide more control over the hardware, and will be needed to get better performance. In general, most NKI language APIs are simplified calls to NKI ISA APIs. Some important NKI ISA APIs that are not easy to achieve with NKI language are [nc_transpose](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/api/generated/nki.isa.nc_transpose.html#nki.isa.nc_transpose) and [dma_copy](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/api/generated/nki.isa.dma_copy.html#nki.isa.dma_copy). We suggest using these instead of the related NKI language APIs, as the behavior and performance is different.
+
 An important detail is that NKI operations often have dimension restrictions due to the physical limits of the hardware. Thus, we must "tile" our operations when dealing with larger matrices. Tiling is quite common in ML workloads and kernels, as the inputs are very, very large. Make sure you have read the APIs carefully for the dimension restrictions, and tile your kernels accordingly. 
 
-You may notice throughout the lab that the reported execution time of NKI kernels may not match the real time it takes when running the python script from terminal. This is because NKI must compile the python NKI kernel into the code (i.e. .neff file) that is actually run on the Tranium instance. This may take seconds to minutes to compile, but this overhead cost is usually acceptable for real ML workloads that run for months. The reported time using `nki.benchmark` is the actual time Tranium takes to run the kernel and is what we will use to measure performance.
+You may notice throughout the lab that the reported execution time of NKI kernels may not match the real time it takes when running the python script from terminal. This is because NKI must compile the python NKI kernel into the code (i.e. .neff file) that is actually run on the Tranium instance. This may take seconds to minutes to compile, but this overhead cost is usually acceptable for real ML workloads that run for weeks or even months. The reported time using `nki.benchmark` is the actual time Tranium takes to run the kernel and is what we will use to measure performance.
 
 
 ### Step 3: Program the nki_transpose kernel
 In this part, we will develop the transpose kernel, which will allow us to use the matmul kernels that expect a transposed input. As mentioned in the guides, there are three main stages to programming a NKI kernel: 1) Load inputs, 2) Perform computation, and 3) Store outputs. For `nki_tranpose`, we are not really performing any computation, but we can consider "transposing" as the desired modification to the input data. 
 
 Fill in the blanks to implement the `nki_transpose` kernel in `kernels.py`. 
-- Hint 1: There is a NKI API that does a combined load and transpose of a tile.
+- Hint 1: There is a NKI API that does a combined load and transpose of a tile. You can also seperate your loading and transpose using nisa.nc_transpose.
 - Hint 2: Use `nl.tile_size.pmax` to get the max partition dimension. Remember, the partition dimension is the first index unless otherwise specified ([Representing data in NKI](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/programming_model.html#representing-data-in-nki)).
-- Hint 3: Use iterators to loop through the indices when tiling: [NKI Language (Iterators)](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/api/nki.language.html#iterators)
+- Hint 3: Use iterators to loop through the indices when tiling: [NKI Language (Iterators)](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/api/nki.language.html#iterators). You will typically only need to use nl.affine_range.
 
 Once you have completed the kernel, run the following command to confirm your implementation is functionally correct. This will use [`nki.simulate_kernel`](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/api/generated/nki.simulate_kernel.html) to run your kernel on CPU for an initial check.
 ```bash
@@ -245,11 +256,12 @@ You may also wish to print your intermediate tensor values within the NKI kernel
 
 
 ### Step 4: Program the nki_bias_add_act kernel
-As the name suggests, this kernel will take an input tensor, a bias vector, and an activation function, and apply the bias and activation to each row of the input tensor. 
+As the name suggests, this kernel will take an input tensor, a bias vector, and an activation function, and apply the bias and activation to each row of the input tensor. Based on the NeuralNetwork class in `ffnn_ref.py` you only need to account for the relu and softmax activation functions.
 
 Fill in the blanks to implement the `nki_bias_add_act` kernel in `kernels.py`. 
 - Hint 1: Many of the [NKI math operations](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/api/nki.language.html#math-operations) allow for the operands to have different dimensions, as long as one can be broadcasted into the other.
-- Hint 2: Most common activation functions are available in the [NKI math operations](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/api/nki.language.html#math-operations)
+- Hint 2: The [NKI Reduction operations](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/api/nki.language.html#reduction-operations) will require an axis, think about which axis we are performing reductions like max and sum over.
+- Hint 3: Most common activation functions are available in the NKI [Activation and Backpropagation functions](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/api/nki.language.html#activation-and-backpropagation-functions), but some of them are deprecated/not supported in newer versions of NKI. You may run into issues with the built-in nl.softmax function. Refer to `ffnn_ref.py` to see how you can implement it using nl.max, nl.subtract, nl.exp, nl.sum, and nl.divide.
 
 Once you have completed the kernel, run the following commands to confirm your implementation works:
 ```bash
@@ -263,6 +275,7 @@ python tester.py --test-bias-add-act
 Similar to the reference numpy model, this kernel will combine the transpose, matmul, and bias/activation kernels to perform the forward pass of the neural network. Fill in the blanks to complete the kernel. Do not change the existing skeleton code for selecting the specific matmul kernel version to use, this will be needed for benchmarking.
 
 Fill in the blanks to implement the `nki_forward` kernel in `kernels.py`. 
+- Hint 1: Take a look at the matmul_kernels in `matmul_kernels.py`. What do you notice about the input arguments. How might this relate to the nki_transpose kernel.
 
 Once you have completed the kernel, run the following commands to confirm your implementation works:
 ```bash
@@ -282,6 +295,7 @@ Follow the steps above to implement the `nki_predict` kernel in `kernels.py`.
 
 - Hint 1: You don't need to program much for Step 1
 - Hint 2: You may need to break Step 2 into two separate steps: 1) identify the max values and 2) identify the indices of the max values. Both of the NKI APIs you need for this can be found in the [NKI ISA manual](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/api/nki.isa.html).
+- Hint 3: The hardware operations might give you more data then you need (i.e. the max 8 or argmax 8). You can ignore the data you don't need and just select the first column of information, or max 1 / argmax 1.
 
 Once you have completed the kernel, run the following commands to confirm your implementation works:
 ```bash
@@ -308,20 +322,11 @@ python ffnn.py --benchmark
 - Note that the latencies may not be strictly decreasing with additional matmul optimizations, depending on how you implemented your other kernels. 
 
 ### Step 9: Submission
-Once you have successfully completed the steps above, you are finished with the directed portion! Make sure your changes have been pushed to your repository, then go to the Directed assignment on [Gradescope](https://www.gradescope.com/courses/959486), and select your GitHub repository to submit your code.
+Once you have successfully completed the steps above, you are finished with the directed portion! Make sure your changes have been pushed to your repository, then go to the Directed assignment on Gradescope and select your GitHub repository to submit your code.
 
 
 ## Open-Ended Portion (70%)
 For the Open-Ended portion, you are tasked with developing a `conv2d` on Tranium and optimizing it as much as possible! This assignment should be completed individually, and the most performant kernels will receive prizes from AWS!
-
-### Prizes:
-The prizes for the best performing `conv2d` kernels are as follows:
-- 1st Place: $200 Amazon gift card
-- 2nd-5th Place: $100 Amazon gift card
-- 6th-nth Place: An Amazon Echo Show (`n` is TBD)
-
-
-Now that you are excited to win some prizes, let's get into the task!
 
 ### Overview of 2D Convolution
 
@@ -489,7 +494,7 @@ Once you have successfully completed the steps above, you are finished with the 
 ## Final Steps
 
 ### Feedback Form
-As the step for this Lab, please fill out this [Lab Feedback Form](https://docs.google.com/forms/d/e/1FAIpQLSdMDX6pdLr19Jmt5v1oP8FOTj4GVqGNUjp8Iu4oV7ydT4ZGCg/viewform?usp=header). There will also be space for you to mention any feedback for the previous labs, which we especially encourage for Lab 4 and 5 since there was not a dedicated feedback question for those assignments.
+As the final graded item for this Lab, please fill out this [Lab Feedback Form](https://docs.google.com/forms/d/e/1FAIpQLSdMDX6pdLr19Jmt5v1oP8FOTj4GVqGNUjp8Iu4oV7ydT4ZGCg/viewform?usp=header). There will also be space for you to mention any feedback for the previous labs, which we especially encourage for Lab 4 and 5 since there was not a dedicated feedback question for those assignments.
 
 ### Teardown your AWS resources
 Finally, follow the [AWS_TEARDOWN](/AWS_TEARDOWN.md) guide to release the resouces you used during the lab. You are free to use up the remaining credits you have and experiment further with Tranium, but any charges to your card are your own responsibility.
