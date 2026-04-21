@@ -3,9 +3,9 @@
 ## Introduction and Goals:
 The goal of this laboratory assignment is to give you an opportunity to program hardware accelerators. As the computational demands of AI and ML applications continue to increase, industry and research efforts have been attempting to meet these demands with Domain Specific Acceleration and custom accelerator hardware. As a result, an increasingly important skill is the ability to map software applications and kernels onto new architectures. 
 
-It is important to learn how to optimize programs to take full advantage of the memory and compute engines available on the target hardware. There are many factors to consider when designing a kernel, such as the communication between compute engines and memory, the amount of data a compute engine can work on at a given time, the dependencies between different computations in your kernel, and more. By the end of this lab, you should be able to program basic kernels on [NeuronCore](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/arch/neuron-hardware/neuron-core-v2.html#neuroncores-v2-arch), the main accelerator device in [AWS Tranium](https://aws.amazon.com/ai/machine-learning/trainium/) machines.
+It is important to learn how to optimize programs to take full advantage of the memory and compute engines available on the target hardware. There are many factors to consider when designing a kernel, such as the communication between compute engines and memory, the amount of data a compute engine can work on at a given time, the dependencies between different computations in your kernel, and more. By the end of this lab, you should be able to program basic kernels on [NeuronCore](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/arch/neuron-hardware/neuron-core-v2.html#neuroncores-v2-arch), the main accelerator device in [AWS Trainium](https://aws.amazon.com/ai/machine-learning/trainium/) machines.
 
-There are two sections of the lab, the Directed and Open-Ended Portions. The Directed Portion is intended to familiarize you with programming for the Tranium accelerator, while the Open-Ended portion will allow you to explore optimizing your programs to get maximal performance out of the hardware. The Open-Ended submissions will automatically be entered into a leaderboard. We will be running a competition, and the most performant kernels will win prizes!
+There are two sections of the lab, the Directed and Open-Ended Portions. The Directed Portion is intended to familiarize you with programming for the Trainium accelerator, while the Open-Ended portion will allow you to explore optimizing your programs to get maximal performance out of the hardware. The Open-Ended submissions will automatically be entered into a leaderboard. We will be running a competition, and the most performant kernels will win prizes!
 
 > [!NOTE]
 >
@@ -46,11 +46,11 @@ Systolic arrays are good for kernels like matrix multiplication. From the animat
 For more details on systolic arrays, please watch and review the lecture on [Spatial Architectures and Trainium](https://cs152.org/).
 
 
-### Tranium Overview
-In this lab, we will work on AWS Tranium. You can find the full architecture guide here: [Trainium Architecture Guide for NKI](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/guides/architecture/trainium_inferentia2_arch.html), but here is a brief overview: 
+### Trainium Overview
+In this lab, we will work on AWS Trainium. You can find the full architecture guide here: [Trainium Architecture Guide for NKI](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/guides/architecture/trainium_inferentia2_arch.html), but here is a brief overview: 
 
 
-Tranium instances contain a single Tranium Device, which has 2 NeuronCores. Each NeuronCore has an HBM (High-bandwidth memory) unit and on-chip storage units that the compute units interface with. Each core has various compute units optimized for different functions:
+Trainium instances contain a single Trainium Device, which has 2 NeuronCores. Each NeuronCore has an HBM (High-bandwidth memory) unit and on-chip storage units that the compute units interface with. Each core has various compute units optimized for different functions:
 - Tensor Engine: 128 x 128 systolic array for matrix operations
 - Vector Engine: 128-wide vector unit, reductions, dependent calculations (each output element may depend on multiple input elements)
 - Scalar Engine: 128-wide scalar unit, for activation functions, independent calculations (each output element may depend on a single input element)
@@ -64,7 +64,7 @@ The NeuronCores are highly optimized and designed for ML workloads, and thus, ea
   <img width="400" src="./img/neuron_device2.png">
 </p>
 
-There are various levels of memory at play in the Tranium Instance. There is the host memory that is external to the Neuron Cores. Then, there is the HBM, which is the main on-device memory. Finally, there is the on-chip memory, consisting of the SBUF (State Buffer) and the PSUM (Partial Sum Buffer). The levels, sizes, and bandwidths of these memories are shown below. When developing kernels, we can also optimize performance by planning our loads and stores based on these architectural parameters and the use of the data in the kernel (i.e. tiling, maximal data reuse, etc).
+There are various levels of memory at play in the Trainium Instance. There is the host memory that is external to the Neuron Cores. Then, there is the HBM, which is the main on-device memory. Finally, there is the on-chip memory, consisting of the SBUF (State Buffer) and the PSUM (Partial Sum Buffer). The levels, sizes, and bandwidths of these memories are shown below. When developing kernels, we can also optimize performance by planning our loads and stores based on these architectural parameters and the use of the data in the kernel (i.e. tiling, maximal data reuse, etc).
 
 <p align="center">
   <img width="600" src="./img/memory_hierarchy.png">
@@ -76,14 +76,14 @@ All computations require loading data from the HBM into the SBUF, which is conne
   <img width="400" src="./img/neuron_core.png">
 </p>
 
-There are a lot of factors at play when writing kernels on Tranium devices, and good kernels will take advantage of all of the compute engines and full memory hierarchy to reduce bottlenecks and extract the most performance. For more details on Tranium architecture, look at the [Trainium Architecture Guide for NKI](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/guides/architecture/trainium_inferentia2_arch.html)
+There are a lot of factors at play when writing kernels on Trainium devices, and good kernels will take advantage of all of the compute engines and full memory hierarchy to reduce bottlenecks and extract the most performance. For more details on Trainium architecture, look at the [Trainium Architecture Guide for NKI](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/guides/architecture/trainium_inferentia2_arch.html)
 
 
 ## Setup
-Follow the steps below to set up the Tranium instance you will be using for the lab.
+Follow the steps below to set up the Trainium instance you will be using for the lab.
 
-### Launch and Configure Tranium Instance
-To begin working on Tranium, follow the instructions in [AWS_SETUP.md](/AWS_SETUP.md)
+### Launch and Configure Trainium Instance
+To begin working on Trainium, follow the instructions in [AWS_SETUP.md](/AWS_SETUP.md)
 
 > [!IMPORTANT] 
 > 
@@ -158,15 +158,15 @@ Clone the GitHub repo to your local machine
 git clone <private-repo-url>
 ```
 
-This will allow you to program and develop your kernels locally. Once you are ready to test them, you can push your changes to GitHub and pull them on the Tranium instance to simulate or benchmark them. While you are allowed to develop your kernels directly while connected to the Tranium instance, it saves resources if you minimize your time connected to the Trainium instance. We recommend you do your initial development locally, then migrate to Tranium to simulate and benchmark the kernels. 
+This will allow you to program and develop your kernels locally. Once you are ready to test them, you can push your changes to GitHub and pull them on the Trainium instance to simulate or benchmark them. While you are allowed to develop your kernels directly while connected to the Trainium instance, it saves resources if you minimize your time connected to the Trainium instance. We recommend you do your initial development locally, then migrate to Trainium to simulate and benchmark the kernels. 
 
 > [!WARNING]
 >
-> Make sure to only make changes on your local or Tranium repository at a single time, otherwise you may run into merge conflicts.
+> Make sure to only make changes on your local or Trainium repository at a single time, otherwise you may run into merge conflicts.
 
 
 ## Directed Portion (30%)
-For the Directed portion, you are tasked with developing an `ffnn` (Feedforward Neural Network) kernel on Tranium. The goal of this task is to familiarize yourself with the Tranium and NeuronCore architecture and learn how to program them using AWS's Neuron Kernel Interface or NKI, which you will learn more about soon.
+For the Directed portion, you are tasked with developing an `ffnn` (Feedforward Neural Network) kernel on Trainium. The goal of this task is to familiarize yourself with the Trainium and NeuronCore architecture and learn how to program them using AWS's Neuron Kernel Interface or NKI, which you will learn more about soon.
 
 ### Overview of Feedforward Neural Networks
 
@@ -196,7 +196,7 @@ All files needed for the directed portion are located in the `nki_ffnn` director
   - Read the [AWS Matrix Multiplication tutorial](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/guides/tutorials/matrix_multiplication.html) for more information. 
 - `kernels.py`: Contains the kernels you will need to implement for the FFNN. 
   - **This is the only file you will need to edit.**
-- `tester.py`: Debug kernels individually on CPU before running full kernel on Tranium.
+- `tester.py`: Debug kernels individually on CPU before running full kernel on Trainium.
 
 ### Step 1: Observe the Python/Numpy Reference FFNN
 
@@ -204,7 +204,7 @@ To start, first take a look at `ffnn_ref.py` for a Numpy implementation of the F
 ```bash
 python ffnn_ref.py --benchmark
 ```
-You should see that the prediction operation takes roughly 440 to 450ms to run using Python and Numpy. Keep this figure in mind when comparing to the performance of the kernel on Tranium using NKI.
+You should see that the prediction operation takes roughly 440 to 450ms to run using Python and Numpy. Keep this figure in mind when comparing to the performance of the kernel on Trainium using NKI.
 
 Now, run the program again with the following command-line flags to store the input data and golden model results. 
 ```bash
@@ -213,7 +213,7 @@ python ffnn_ref.py --store-data
 There should be `*.bin` files in the `ffnn` directory, one for each of the following matrices: `X`, `W1`, `b1`, `W2`, `b2`, and `Y`. We will use these for running and verifying the NKI implementation.
 
 ### Step 2: Learn about Neuron Kernel Interface (NKI)
-In order to program the Tranium devices easily, we will take advantage of AWS's [Neuron Kernel Interface](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/index.html) or NKI. This is a collection of APIs that allow users to program directly in Python and perform computations using the Tranium engines.
+In order to program the Trainium devices easily, we will take advantage of AWS's [Neuron Kernel Interface](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/index.html) or NKI. This is a collection of APIs that allow users to program directly in Python and perform computations using the Trainium engines.
 > [!IMPORTANT]
 >
 > Make sure to skim through the [Neuron Kernel Interface](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/index.html) documentation, and pay particular attention to the [NKI Language](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/api/nki.language.html) APIs and the [NKI ISA](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/api/nki.isa.html) APIs.
@@ -229,7 +229,7 @@ For each of the APIs, the documentation will provide details on what inputs and 
 
 An important detail is that NKI operations often have dimension restrictions due to the physical limits of the hardware. Thus, we must "tile" our operations when dealing with larger matrices. Tiling is quite common in ML workloads and kernels, as the inputs are very, very large. Make sure you have read the APIs carefully for the dimension restrictions, and tile your kernels accordingly. 
 
-You may notice throughout the lab that the reported execution time of NKI kernels may not match the real time it takes when running the python script from terminal. This is because NKI must compile the python NKI kernel into the code (i.e. .neff file) that is actually run on the Tranium instance. This may take seconds to minutes to compile, but this overhead cost is usually acceptable for real ML workloads that run for weeks or even months. The reported time using `nki.benchmark` is the actual time Tranium takes to run the kernel and is what we will use to measure performance.
+You may notice throughout the lab that the reported execution time of NKI kernels may not match the real time it takes when running the python script from terminal. This is because NKI must compile the python NKI kernel into the code (i.e. .neff file) that is actually run on the Trainium instance. This may take seconds to minutes to compile, but this overhead cost is usually acceptable for real ML workloads that run for weeks or even months. The reported time using `nki.benchmark` is the actual time Trainium takes to run the kernel and is what we will use to measure performance.
 
 
 ### Step 3: Program the nki_transpose kernel
@@ -306,7 +306,7 @@ python tester.py --test-predict
 ```
 
 ### Step 7: Run nki_predict
-Once you have completed all of the above steps, your NKI FFNN kernel should be complete! Run the command below to run all the kernels on Tranium:
+Once you have completed all of the above steps, your NKI FFNN kernel should be complete! Run the command below to run all the kernels on Trainium:
 ```bash
 python ffnn.py
 ```
@@ -326,7 +326,7 @@ Once you have successfully completed the steps above, you are finished with the 
 
 
 ## Open-Ended Portion (70%)
-For the Open-Ended portion, you are tasked with developing a `conv2d` on Tranium and optimizing it as much as possible! This assignment should be completed individually, and the most performant kernels will receive prizes from AWS!
+For the Open-Ended portion, you are tasked with developing a `conv2d` on Trainium and optimizing it as much as possible! This assignment should be completed individually, and the most performant kernels will receive prizes from AWS!
 
 ### Overview of 2D Convolution
 
@@ -404,7 +404,7 @@ When mapping an algorithm or computation to a target hardware, here are some fac
 #### Brainstorm using NKI Simulate
 Once you have an idea of how you want to implement your kernel, you can program it in the `conv2d_nki` function in `conv2d.py`. Then, you can quickly test the kernel for functional accuracy using `nki.simulate_kernel`.
 
-Note, `conv2d.py` contains a lot of skeleton code that is meant to guide you to an initial NKI kernel implementation of conv2d, mirroring `conv2d_numpy_nki` in `conv2d_ref.py` and the mapping explained in lecture. You are welcome to implement this version to start, but you are not obligated to keep this mapping. In fact, you will need to optimize this further to meet the minimum performance requirements, and you may need to restructure/remap the kernel completely to push performance further. We encourage you to explain a variety of different implementations.
+Note, `conv2d.py` contains a lot of skeleton code that is meant to guide you to an initial NKI kernel implementation of conv2d, mirroring `conv2d_numpy_nki` in `conv2d_ref.py` and the mapping explained in lecture. You are welcome to implement this version to start, but you are not obligated to keep this mapping. You may need to restructure/remap the kernel completely to push performance further. We encourage you to explain a variety of different implementations.
 
 Run the following command to simulate your kernel and confirm your implementation works functionally on basic tests:
 ```bash
@@ -415,7 +415,7 @@ Once you know your kernel works functionally, you can move on to the [next step]
 #### Brainstorm using NumPy
 If you want to brainstorm your implementation on your local computer, you can first create/modify the reference implementation on NumPy in the `conv2d_numpy_nki` function in `conv2d_ref.py`. Feel free to modify the `test_kernels` list in `tester_ref.py` to only benchmark the kernels you are modifying or developing. 
 
-By brainstorming on NumPy, you can quickly confirm that your approach is functionally correct (i.e. correct outputs), before using up your credits and time on the Tranium instance. However, we recommend you spend most of your time developing directly on NKI to make sure your mapping is actually compatible/achievable with the NKI APIs and NeuronCore.
+By brainstorming on NumPy, you can quickly confirm that your approach is functionally correct (i.e. correct outputs), before using up your credits and time on the Trainium instance. However, we recommend you spend most of your time developing directly on NKI to make sure your mapping is actually compatible/achievable with the NKI APIs and NeuronCore.
 
 Run the following command to simulate your kernel and confirm your implementation works functionally:
 ```bash
@@ -429,9 +429,9 @@ python tester_ref.py --benchmark
 
 > [!WARNING]
 >
-> Use the `--benchmark` flag at your own risk. NumPy and CPUs do not have the same optimizations that Tranium will (e.g. built-in hardware for tiling, reshaping, various dtypes, etc). For example, the tiled matmul version may be slightly slower than the plain matmul version (due to the reshaping, looping, etc), but it will be faster (and required) on architectures like Tranium that are meant for tiling and parallelization. Tests using float16 will also be significantly slower than float32 on NumPy, but on Tranium it will be much faster.
+> Use the `--benchmark` flag at your own risk. NumPy and CPUs do not have the same optimizations that Trainium will (e.g. built-in hardware for tiling, reshaping, various dtypes, etc). For example, the tiled matmul version may be slightly slower than the plain matmul version (due to the reshaping, looping, etc), but it will be faster (and required) on architectures like Trainium that are meant for tiling and parallelization. Tests using float16 will also be significantly slower than float32 on NumPy, but on Trainium it will be much faster.
 > 
-> The speed of your kernel on NumPy may give some insights on relative performance gain, but ultimately, they won't be accurate to the execution on Tranium with NKI. You should use NumPy brainstorming simply to ensure functional accuracy, and then immediately move to NKI for accurate performance testing and benchmarking. 
+> The speed of your kernel on NumPy may give some insights on relative performance gain, but ultimately, they won't be accurate to the execution on Trainium with NKI. You should use NumPy brainstorming simply to ensure functional accuracy, and then immediately move to NKI for accurate performance testing and benchmarking. 
 
 ### Step 2: Program conv2d
 Develop and program the `conv2d_nki` kernel in `conv2d.py`.
@@ -482,7 +482,7 @@ Some things you may want to look into for optimization:
 
 
 #### Debugging and Optimizing Tips using Neuron Profile
-If you are having trouble meeting the performance requirements, make sure to carefully read the architecture documentation linked in the above sections, especially in the [Tranium Overview](#tranium-overview) section. You will likely see the most improvements in your performance by simply ensuring your kernel maps properly to the hardware parameters and architecture details.
+If you are having trouble meeting the performance requirements, make sure to carefully read the architecture documentation linked in the above sections, especially in the [Trainium Overview](#tranium-overview) section. You will likely see the most improvements in your performance by simply ensuring your kernel maps properly to the hardware parameters and architecture details.
 
 Nevertheless, there is also a way to get more detailed performance metrics of the execution of your kernel, using AWS's Neuron Profile. 
 
@@ -504,7 +504,7 @@ Once you have successfully completed the steps above, you are finished with the 
 > Shutdown your instance once you are finished working.
 
 ## Conclusion
-Congrats on finishing Lab 6! In this lab, you explored the architecture and programming of ML accelerators, specifically the AWS Tranium device. You learned about the key components of ML accelerators, such as systolic arrays, memory hierarchies, and specialized compute engines, and how these components are optimized for machine learning workloads. By implementing kernels using the Neuron Kernel Interface (NKI), you gained hands-on experience in mapping ML algorithms to a target hardware, customizing the iteration, computations, memory management, and more to achieve high performance. By completing this lab, you have gained valuable skills in programming domain-specific accelerators, a critical area in modern computing. These skills will be increasingly relevant as the demand for efficient AI and ML solutions continues to grow.
+Congrats on finishing Lab 6! In this lab, you explored the architecture and programming of ML accelerators, specifically the AWS Trainium device. You learned about the key components of ML accelerators, such as systolic arrays, memory hierarchies, and specialized compute engines, and how these components are optimized for machine learning workloads. By implementing kernels using the Neuron Kernel Interface (NKI), you gained hands-on experience in mapping ML algorithms to a target hardware, customizing the iteration, computations, memory management, and more to achieve high performance. By completing this lab, you have gained valuable skills in programming domain-specific accelerators, a critical area in modern computing. These skills will be increasingly relevant as the demand for efficient AI and ML solutions continues to grow.
 
 ## Acknowledgements
-The original material for this lab was designed by Ronit Nagarapu for the Spring 2025 edition of Berkeley's CS152 course. This lab was made possible with the assistance of AWS & Annapurna Labs and inspired by Stanford's CS149 Tranium assignments. 
+The original material for this lab was designed by Ronit Nagarapu for the Spring 2025 edition of Berkeley's CS152 course. This lab was made possible with the assistance of AWS & Annapurna Labs and inspired by Stanford's CS149 Trainium assignments. 

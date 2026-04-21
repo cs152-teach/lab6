@@ -1,5 +1,5 @@
 # AWS Setup Instructions
-You should have recieved an email with the subject "CS152 Lab 6 AWS Access." In that email, you will find your AWS Access Key, Secret Access Key, and a file attached for your SSH access.
+You should have received an email with the subject "CS152 Lab 6 AWS Access." In that email, you will find your AWS Access Key, Secret Access Key, and a file attached for your SSH access.
 
 ## Initial Setup
 

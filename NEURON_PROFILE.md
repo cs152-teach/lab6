@@ -1,5 +1,5 @@
 # Neuron Profile User Guide
-Neuron Profile is an AWS tool to allow users to view the performance metrics of programs run on Neuron Devices like Tranium. Read the [Neuron Profile User Guide](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/tools/neuron-sys-tools/neuron-profile-user-guide.html) for more detailed information.
+Neuron Profile is an AWS tool to allow users to view the performance metrics of programs run on Neuron Devices like Trainium. Read the [Neuron Profile User Guide](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/tools/neuron-sys-tools/neuron-profile-user-guide.html) for more detailed information.
 
 ## Using neuron-profile
 
@@ -15,12 +15,12 @@ neuron-profile view -n <file name>.neff -s <file name>.ntff
 ```
 This will take a while to load, but once it does, it will output a localhost link you can click to view the GUI.
 
-Make sure you have port forwarding enabled. You can run this command in a seperate terminal on your **local machine** to enable port forwarding:
+Make sure you have port forwarding enabled. You can run this command in a separate terminal on your **local machine** to enable port forwarding:
 ```bash
 ssh trn1_cs152 -L 3001:localhost:3001 -L 8086:localhost:8086
 ```
 
-### Interpretting the Neuron Profile GUI
+### Interpreting the Neuron Profile GUI
 It is suggested to read the [Neuron Profile User Guide](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/tools/neuron-sys-tools/neuron-profile-user-guide.html) to better understand how to interact with the Neuron Profile GUI and interpret the results. Specifically, the [Understanding a Neuron profile](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/tools/profiler/neuron-profile-user-guide.html#understanding-a-neuron-profile) section will be useful.
 
 Here are some steps you can take to interpret the profile:
@@ -29,5 +29,5 @@ Here are some steps you can take to interpret the profile:
 - You can also view the summary statistics by clicking on the "Summary." Look at "overall_stats > hardware_flops", "tensor_engine > tensor_engine_active_time_percent", and other statistics to get a better understand of how your kernel is using the hardware.
 
 Analyzing Instructions:
-- If you click on a single horizontal bar for the engine instructions, and scroll down to the "Details" seciton, you will see a lines saying something like: "Bir debug info source location: /home/ubuntu/lab6/nki_conv2d/conv2d.py:90." The "90" corresponds to the NKI source code line that this instruction is associated with. You can use this information to map the profile instructions with your NKI code, which may help you debug.
+- If you click on a single horizontal bar for the engine instructions, and scroll down to the "Details" section, you will see a lines saying something like: "Bir debug info source location: /home/ubuntu/lab6/nki_conv2d/conv2d.py:90." The "90" corresponds to the NKI source code line that this instruction is associated with. You can use this information to map the profile instructions with your NKI code, which may help you debug.
 - When you click on a instruction/bar, other bars will be highlighted in light blue. These indicate the dependencies between this instruction and other instructions.
