@@ -3,7 +3,7 @@
 ## Introduction and Goals:
 The goal of this laboratory assignment is to give you an opportunity to program hardware accelerators. As the computational demands of AI and ML applications continue to increase, industry and research efforts have been attempting to meet these demands with Domain Specific Acceleration and custom accelerator hardware. As a result, an increasingly important skill is the ability to map software applications and kernels onto new architectures. 
 
-It is important to learn how to optimize programs to take full advantage of the memory and compute engines available on the target hardware. There are many factors to consider when designing a kernel, such as the communication between compute engines and memory, the amount of data a compute engine can work on at a given time, the dependencies between different computations in your kernel, and more. By the end of this lab, you should be able to program basic kernels on [NeuronCore](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/arch/neuron-hardware/neuron-core-v2.html#neuroncores-v2-arch), the main accelerator device in [AWS Trainium](https://aws.amazon.com/ai/machine-learning/trainium/) machines.
+It is important to learn how to optimize programs to take full advantage of the memory and compute engines available on the target hardware. There are many factors to consider when designing a kernel, such as the communication between compute engines and memory, the amount of data a compute engine can work on at a given time, the dependencies between different computations in your kernel, and more. By the end of this lab, you should be able to program basic kernels on [NeuronCore-v2](https://awsdocs-neuron.readthedocs-hosted.com/en/v2.26.1/about-neuron/arch/neuron-hardware/neuron-core-v2.html#neuroncores-v2-arch), the main accelerator device in [AWS Trainium](https://awsdocs-neuron.readthedocs-hosted.com/en/v2.26.1/about-neuron/arch/neuron-hardware/trainium.html#) machines.
 
 There are two sections of the lab, the Directed and Open-Ended Portions. The Directed Portion is intended to familiarize you with programming for the Trainium accelerator, while the Open-Ended portion will allow you to explore optimizing your programs to get maximal performance out of the hardware. The Open-Ended submissions will automatically be entered into a leaderboard. We will be running a competition, and the most performant kernels will win prizes!
 
@@ -47,7 +47,7 @@ For more details on systolic arrays, please watch and review the lecture on [Spa
 
 
 ### Tranium Overview
-In this lab, we will work on AWS Tranium. You can find the full architecture guide here: [Trainium Architecture Guide](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/guides/architecture/trainium_inferentia2_arch.html). In this lab, we will use a slighlt older version of NKI, you can find the full documentation for it here: [NKI1 Documentation](https://awsdocs-neuron.readthedocs-hosted.com/en/v2.26.1/nki/api/nki.isa.html). Here is a brief overview of the Trainium architeture: 
+In this lab, we will work on AWS Tranium. You can find the full architecture guide here: [Trainium Architecture Guide](https://awsdocs-neuron.readthedocs-hosted.com/en/v2.26.1/nki/arch/trainium_inferentia2_arch.html). In this lab, we will use a slightly older version of NKI, you can find the full documentation for it here: [NKI1 Documentation](https://awsdocs-neuron.readthedocs-hosted.com/en/v2.26.1/nki/api/index.html). Here is a brief overview of the Trainium architecture: 
 
 
 Trainium instances contain a single Trainium Device, which has 2 NeuronCores. Each NeuronCore has an HBM (High-bandwidth memory) unit and on-chip storage units that the compute units interface with. Each core has various compute units optimized for different functions:
@@ -56,7 +56,7 @@ Trainium instances contain a single Trainium Device, which has 2 NeuronCores. Ea
 - Scalar Engine: 128-wide scalar unit, for activation functions, independent calculations (each output element may depend on a single input element)
 - GpSimd Engine: general-purpose engine for operations not suited for the other engines
 
-Read the [NeuronCore Compute Engines](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/guides/architecture/trainium_inferentia2_arch.html#neuroncore-v2-compute-engines) section of the architecture guide for more details on each engine.
+Read the [NeuronCore Compute Engines](https://awsdocs-neuron.readthedocs-hosted.com/en/v2.26.1/nki/arch/trainium_inferentia2_arch.html#neuroncore-v2-compute-engines) section of the architecture guide for more details on each engine.
 
 The NeuronCores are highly optimized and designed for ML workloads, and thus, each engine has its own unique purpose in common ML algorithms. We can get maximal performance out of the chip if we carefully integrate the engines together. We must make sure that our algorithm is designed such that computations are mapped to the appropriate and most powerful engines while accounting for bandwidth and throughput constraints. We must also plan for communications between engines based on their internal connections and the on-chip memory system.
 
@@ -70,13 +70,13 @@ There are various levels of memory at play in the Trainium Instance. There is th
   <img width="600" src="./img/memory_hierarchy.png">
 </p>
 
-All computations require loading data from the HBM into the SBUF, which is connected as an input to all of the engines. The output of the Tensor Engine is stored in the PSUM, which can be an input to the Vector and Scalar Engines. The Vector, Scalar, and GpSimd engines can write back to the SBUF. Note that the SBUF and PSUM contain 128 partitions each, which are similar to banks of memory. These have connections to the 128 lanes in the Tensor, Scalar, and Vector engines. Thus, optimizing kernels will require tiling memory and compute instructions over the 128 lanes and partitions. Read the [Data Movement](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/guides/architecture/trainium_inferentia2_arch.html#data-movement) section of the architecture guide for more information.
+All computations require loading data from the HBM into the SBUF, which is connected as an input to all of the engines. The output of the Tensor Engine is stored in the PSUM, which can be an input to the Vector and Scalar Engines. The Vector, Scalar, and GpSimd engines can write back to the SBUF. Note that the SBUF and PSUM contain 128 partitions each, which are similar to banks of memory. These have connections to the 128 lanes in the Tensor, Scalar, and Vector engines. Thus, optimizing kernels will require tiling memory and compute instructions over the 128 lanes and partitions. Read the [Data Movement](https://awsdocs-neuron.readthedocs-hosted.com/en/v2.26.1/nki/arch/trainium_inferentia2_arch.html#data-movement) section of the architecture guide for more information.
 
 <p align="center">
   <img width="400" src="./img/neuron_core.png">
 </p>
 
-There are a lot of factors at play when writing kernels on Trainium devices, and good kernels will take advantage of all of the compute engines and full memory hierarchy to reduce bottlenecks and extract the most performance. For more details on Trainium architecture, look at the [Trainium Architecture Guide for NKI](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/guides/architecture/trainium_inferentia2_arch.html)
+There are a lot of factors at play when writing kernels on Trainium devices, and good kernels will take advantage of all of the compute engines and full memory hierarchy to reduce bottlenecks and extract the most performance. For more details on Trainium architecture, look at the [Trainium Architecture Guide for NKI](https://awsdocs-neuron.readthedocs-hosted.com/en/v2.26.1/nki/arch/trainium_inferentia2_arch.html)
 
 
 ## Setup
@@ -193,7 +193,7 @@ All files needed for the directed portion are located in the `nki_ffnn` director
 - `ffnn_ref.py`: Reference NumPy implementation of the Feedforward Neural Network.
 - `ffnn.py`: Main program to develop the `ffnn` NKI kernels.
 - `matmul_kernels.py`: Matrix Multiplication kernels developed by AWS, with various levels of optimization. 
-  - Read the [AWS Matrix Multiplication tutorial](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/guides/tutorials/matrix_multiplication.html) for more information. 
+  - Read the [AWS Matrix Multiplication tutorial](https://awsdocs-neuron.readthedocs-hosted.com/en/v2.26.1/nki/tutorials/matrix_multiplication.html) for more information. 
 - `kernels.py`: Contains the kernels you will need to implement for the FFNN. 
   - **This is the only file you will need to edit.**
 - `tester.py`: Debug kernels individually on CPU before running full kernel on Trainium.
@@ -213,19 +213,18 @@ python ffnn_ref.py --store-data
 There should be `*.bin` files in the `ffnn` directory, one for each of the following matrices: `X`, `W1`, `b1`, `W2`, `b2`, and `Y`. We will use these for running and verifying the NKI implementation.
 
 ### Step 2: Learn about Neuron Kernel Interface (NKI)
-In order to program the Trainium devices easily, we will take advantage of AWS's [Neuron Kernel Interface](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/index.html) or NKI. This is a collection of APIs that allow users to program directly in Python and perform computations using the Trainium engines.
+In order to program the Trainium devices easily, we will take advantage of AWS's [Neuron Kernel Interface](https://awsdocs-neuron.readthedocs-hosted.com/en/v2.26.1/nki/api/index.html) or NKI. This is a collection of APIs that allow users to program directly in Python and perform computations using the Trainium engines.
 > [!IMPORTANT]
 >
-> Make sure to skim through the [Neuron Kernel Interface](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/index.html) documentation, and pay particular attention to the [NKI Language](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/api/nki.language.html) APIs and the [NKI ISA](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/api/nki.isa.html) APIs.
+> Make sure to skim through the [Neuron Kernel Interface](https://awsdocs-neuron.readthedocs-hosted.com/en/v2.26.1/nki/api/index.html) documentation, and pay particular attention to the [NKI Language](https://awsdocs-neuron.readthedocs-hosted.com/en/v2.26.1/nki/api/nki.language.html) APIs and the [NKI ISA](https://awsdocs-neuron.readthedocs-hosted.com/en/v2.26.1/nki/api/nki.isa.html) APIs.
 > 
 > Also, make sure to read these sections of the documentation before proceeding:
-> - [About Neuron Kernel Interface (NKI)](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/get-started/about/)
-> - [Implementing your first NKI kernel](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/getting_started.html#implementing-your-first-nki-kernel)
-> - [Representing data in NKI](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/get-started/about/data-representation-overview.html#representing-data-in-nki)
+> - [Implementing your first NKI kernel](https://awsdocs-neuron.readthedocs-hosted.com/en/v2.26.1/nki/getting_started.html#implementing-your-first-nki-kernel)
+> - [Representing data in NKI](https://awsdocs-neuron.readthedocs-hosted.com/en/v2.26.1/nki/programming_model.html#representing-data-in-nki)
 >
 > In addition to the linked sections, we highly recommend reading or skimming the full guides, as they will help in developing the NKI kernels.
 
-For each of the APIs, the documentation will provide details on what inputs and outputs they expect, and how the instruction executes on hardware. The NKI ISA APIs are more complex, but provide more control over the hardware, and will be needed to get better performance. In general, most NKI language APIs are simplified calls to NKI ISA APIs. Some important NKI ISA APIs that are not easy to achieve with NKI language are [nc_transpose](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/api/generated/nki.isa.nc_transpose.html#nki.isa.nc_transpose) and [dma_copy](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/api/generated/nki.isa.dma_copy.html#nki.isa.dma_copy). We suggest using these instead of the related NKI language APIs, as the behavior and performance is different.
+For each of the APIs, the documentation will provide details on what inputs and outputs they expect, and how the instruction executes on hardware. The NKI ISA APIs are more complex, but provide more control over the hardware, and will be needed to get better performance. In general, most NKI language APIs are simplified calls to NKI ISA APIs. Some important NKI ISA APIs that are not easy to achieve with NKI language are [nc_transpose](https://awsdocs-neuron.readthedocs-hosted.com/en/v2.26.1/nki/api/generated/nki.isa.nc_transpose.html) and [dma_copy](https://awsdocs-neuron.readthedocs-hosted.com/en/v2.26.1/nki/api/generated/nki.isa.dma_copy.html). We suggest using these instead of the related NKI language APIs, as the behavior and performance is different.
 
 An important detail is that NKI operations often have dimension restrictions due to the physical limits of the hardware. Thus, we must "tile" our operations when dealing with larger matrices. Tiling is quite common in ML workloads and kernels, as the inputs are very, very large. Make sure you have read the APIs carefully for the dimension restrictions, and tile your kernels accordingly. 
 
@@ -237,10 +236,10 @@ In this part, we will develop the transpose kernel, which will allow us to use t
 
 Fill in the blanks to implement the `nki_transpose` kernel in `kernels.py`. 
 - Hint 1: There is a NKI API that does a combined load and transpose of a tile. You can also seperate your loading and transpose using nisa.nc_transpose.
-- Hint 2: Use `nl.tile_size.pmax` to get the max partition dimension. Remember, the partition dimension is the first index unless otherwise specified ([Representing data in NKI](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/programming_model.html#representing-data-in-nki)).
-- Hint 3: Use iterators to loop through the indices when tiling: [NKI Language (Iterators)](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/api/nki.language.html#iterators). You will typically only need to use nl.affine_range.
+- Hint 2: Use `nl.tile_size.pmax` to get the max partition dimension. Remember, the partition dimension is the first index unless otherwise specified ([Representing data in NKI](https://awsdocs-neuron.readthedocs-hosted.com/en/v2.26.1/nki/programming_model.html#representing-data-in-nki)).
+- Hint 3: Use iterators to loop through the indices when tiling: [NKI Language (Iterators)](https://awsdocs-neuron.readthedocs-hosted.com/en/v2.26.1/nki/api/nki.language.html#iterators). You will typically only need to use nl.affine_range.
 
-Once you have completed the kernel, run the following command to confirm your implementation is functionally correct. This will use [`nki.simulate_kernel`](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/api/generated/nki.simulate_kernel.html) to run your kernel on CPU for an initial check.
+Once you have completed the kernel, run the following command to confirm your implementation is functionally correct. This will use [`nki.simulate_kernel`](https://awsdocs-neuron.readthedocs-hosted.com/en/v2.26.1/nki/api/generated/nki.simulate_kernel.html#nki.simulate_kernel) to run your kernel on CPU for an initial check.
 ```bash
 python tester.py --test-transpose --simulate
 ```
@@ -252,16 +251,16 @@ python tester.py --test-transpose
 
 If you are not passing the tests, make sure to read the documentation carefully for the limits and restrictions on various NKI APIs. Especially on the non-simulated version of the test, you may run into errors with the compiler, usually due to looping, indexing, and calling NKI APIs in ways that are not supported.
 
-You may also wish to print your intermediate tensor values within the NKI kernel. Running the kernel with the `--simulate` flag will enable device printing with [`nl.device_print`](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/api/generated/nki.language.device_print.html) (make sure to read the function signature as you have to pass two seperate arguments, the string you want to prefix and the tensor you want to output). Thus, you can put `nl.device_print` statements in your kernel if you are running the test with `--simulate`. Make sure to comment out these `nl.device_print` statements when running without the `--simulate` flag.
+You may also wish to print your intermediate tensor values within the NKI kernel. Running the kernel with the `--simulate` flag will enable device printing with [`nl.device_print`](https://awsdocs-neuron.readthedocs-hosted.com/en/v2.26.1/nki/api/generated/nki.language.device_print.html) (make sure to read the function signature as you have to pass two seperate arguments, the string you want to prefix and the tensor you want to output). Thus, you can put `nl.device_print` statements in your kernel if you are running the test with `--simulate`. Make sure to comment out these `nl.device_print` statements when running without the `--simulate` flag.
 
 
 ### Step 4: Program the nki_bias_add_act kernel
 As the name suggests, this kernel will take an input tensor, a bias vector, and an activation function, and apply the bias and activation to each row of the input tensor. Based on the NeuralNetwork class in `ffnn_ref.py` you only need to account for the relu and softmax activation functions.
 
 Fill in the blanks to implement the `nki_bias_add_act` kernel in `kernels.py`. 
-- Hint 1: Many of the [NKI math operations](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/api/nki.language.html#math-operations) allow for the operands to have different dimensions, as long as one can be broadcasted into the other.
-- Hint 2: The [NKI Reduction operations](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/api/nki.language.html#reduction-operations) will require an axis, think about which axis we are performing reductions like max and sum over.
-- Hint 3: Most common activation functions are available in the NKI [Activation and Backpropagation functions](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/api/nki.language.html#activation-and-backpropagation-functions), but some of them are deprecated/not supported in newer versions of NKI. You may run into issues with the built-in nl.softmax function. Refer to `ffnn_ref.py` to see how you can implement it using nl.max, nl.subtract, nl.exp, nl.sum, and nl.divide.
+- Hint 1: Many of the [NKI math operations](https://awsdocs-neuron.readthedocs-hosted.com/en/v2.26.1/nki/api/nki.language.html#math-operations) allow for the operands to have different dimensions, as long as one can be broadcasted into the other.
+- Hint 2: Reduction operations like max and sum will require an axis, think about which axis we are performing the reductions over.
+- Hint 3: Most common activation functions are available in the NKI Language, but some of them are deprecated/not supported in newer versions of NKI. You may run into issues with the built-in nl.softmax function. Refer to `ffnn_ref.py` to see how you can implement it using nl.max, nl.subtract, nl.exp, nl.sum, and nl.divide.
 
 Once you have completed the kernel, run the following commands to confirm your implementation works:
 ```bash
@@ -294,7 +293,7 @@ Now, we will combine all our kernels to get the probability distribution from th
 Follow the steps above to implement the `nki_predict` kernel in `kernels.py`. 
 
 - Hint 1: You don't need to program much for Step 1
-- Hint 2: You may need to break Step 2 into two separate steps: 1) identify the max values and 2) identify the indices of the max values. Both of the NKI APIs you need for this can be found in the [NKI ISA manual](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/api/nki.isa.html).
+- Hint 2: You may need to break Step 2 into two separate steps: 1) identify the max values and 2) identify the indices of the max values. Both of the NKI APIs you need for this can be found in the [NKI ISA manual](https://awsdocs-neuron.readthedocs-hosted.com/en/v2.26.1/nki/api/nki.isa.html).
 - Hint 3: The hardware operations might give you more data then you need (i.e. the max 8 or argmax 8). You can ignore the data you don't need and just select the first column of information, or max 1 / argmax 1.
 
 Once you have completed the kernel, run the following commands to confirm your implementation works:
@@ -318,7 +317,7 @@ Run the following command to benchmark the `nki_predict` kernel, using the diffe
 python ffnn.py --benchmark
 ```
 - Compare the latency of the "tiled" matmul vs the reference numpy implementation. How much faster is the NKI implementation?
-- Compare the latencies of the various matmul kernels. Note any trends or outliers, and take a look at the [AWS Matrix Multiplication tutorial](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/nki/tutorials/matrix_multiplication.html#matrix-multiplication) to try and understand the changes in latency.
+- Compare the latencies of the various matmul kernels. Note any trends or outliers, and take a look at the [AWS Matrix Multiplication tutorial](https://awsdocs-neuron.readthedocs-hosted.com/en/v2.26.1/nki/tutorials/matrix_multiplication.html#matrix-multiplication) to try and understand the changes in latency.
 - Note that the latencies may not be strictly decreasing with additional matmul optimizations, depending on how you implemented your other kernels. 
 
 ### Step 9: Submission
