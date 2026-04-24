@@ -47,7 +47,7 @@ For more details on systolic arrays, please watch and review the lecture on [Spa
 
 
 ### Tranium Overview
-In this lab, we will work on AWS Tranium. You can find the full architecture guide here: [Trainium Architecture Guide for NKI](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/guides/architecture/trainium_inferentia2_arch.html), but here is a brief overview: 
+In this lab, we will work on AWS Tranium. You can find the full architecture guide here: [Trainium Architecture Guide](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/nki/guides/architecture/trainium_inferentia2_arch.html). In this lab, we will use a slighlt older version of NKI, you can find the full documentation for it here: [NKI1 Documentation](https://awsdocs-neuron.readthedocs-hosted.com/en/v2.26.1/nki/api/nki.isa.html). Here is a brief overview of the Trainium architeture: 
 
 
 Tranium instances contain a single Tranium Device, which has 2 NeuronCores. Each NeuronCore has an HBM (High-bandwidth memory) unit and on-chip storage units that the compute units interface with. Each core has various compute units optimized for different functions:
