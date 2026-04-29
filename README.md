@@ -294,7 +294,7 @@ Follow the steps above to implement the `nki_predict` kernel in `kernels.py`.
 
 - Hint 1: You don't need to program much for Step 1
 - Hint 2: You may need to break Step 2 into two separate steps: 1) identify the max values and 2) identify the indices of the max values. Both of the NKI APIs you need for this can be found in the [NKI ISA manual](https://awsdocs-neuron.readthedocs-hosted.com/en/v2.26.1/nki/api/nki.isa.html).
-- Hint 3: The hardware operations might give you more data then you need (i.e. the max 8 or argmax 8). You can ignore the data you don't need and just select the first column of information, or max 1 / argmax 1.
+- Hint 3: The hardware operations might give you more data than you need (i.e. the max 8 or argmax 8). You can ignore the data you don't need and just select the first column of information, or max 1 / argmax 1.
 
 Once you have completed the kernel, run the following commands to confirm your implementation works:
 ```bash
